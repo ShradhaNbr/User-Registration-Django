@@ -1,10 +1,6 @@
 import json
-
-from django.contrib import auth
-
-from django.contrib.auth.models import User
 from django.http import JsonResponse
-
+from .models import UserRegistration
 
 """
     This function registers a new user
@@ -15,12 +11,16 @@ from django.http import JsonResponse
 def register_request(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        name = data.get('name')
         username = data.get('username')
-        email = data.get('email')
         password = data.get('password')
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.save()
-        response = {"message": "Registered successfully"}
+        if UserRegistration.objects.filter(username=username).exists():
+            response = {"message": "Username already exists"}
+            return JsonResponse(response)
+        else:
+            user = UserRegistration(name=name, username=username, password=password)
+            user.save()
+            response = {"message": "Registered successfully"}
         return JsonResponse(response)
 
 
@@ -36,9 +36,7 @@ def login(request):
             data = json.loads(request.body)
             login_name = data.get('username')
             login_password = data.get('password')
-            user = auth.authenticate(username=login_name, password=login_password)
-            if user is not None:
-                auth.login(request, user)
+            if UserRegistration.objects.filter(username=login_name, password=login_password).exists():
                 data = {'message': 'Logged in Successfully'}
                 return JsonResponse(data)
             else:
