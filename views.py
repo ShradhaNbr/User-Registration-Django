@@ -5,20 +5,19 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 
-
 """
     This function registers a new user
             :return: Response if registered or not
 """
 
 
-def register_request(request):
+def register(request):
     if request.method == "POST":
         data = json.loads(request.body)
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
-        user = User.objects.create_user(username=username, email=email, password=password)
+        user = User.objects.create_user(username, email, password)
         user.save()
         response = {"message": "Registered successfully"}
         return JsonResponse(response)
@@ -30,7 +29,7 @@ def register_request(request):
 """
 
 
-def login(request):
+def login_user(request):
     try:
         if request.method == 'POST':
             data = json.loads(request.body)
@@ -44,5 +43,5 @@ def login(request):
             else:
                 data = {"message": "Invalid Credentials!!!"}
                 return JsonResponse(data)
-    except Exception as e:
-        raise e
+    except Exception:
+        raise ValueError
