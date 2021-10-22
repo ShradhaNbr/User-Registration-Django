@@ -1,6 +1,9 @@
 import json
+
+from django.contrib import auth
+
+from django.contrib.auth.models import User
 from django.http import JsonResponse
-from .models import UserRegistration
 
 """
     This function registers a new user
@@ -8,19 +11,15 @@ from .models import UserRegistration
 """
 
 
-def register_request(request):
+def register(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        name = data.get('name')
         username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
-        if UserRegistration.objects.filter(username=username).exists():
-            response = {"message": "Username already exists"}
-            return JsonResponse(response)
-        else:
-            user = UserRegistration(name=name, username=username, password=password)
-            user.save()
-            response = {"message": "Registered successfully"}
+        user = User.objects.create_user(username, email, password)
+        user.save()
+        response = {"message": "Registered successfully"}
         return JsonResponse(response)
 
 
@@ -30,17 +29,19 @@ def register_request(request):
 """
 
 
-def login(request):
+def login_user(request):
     try:
         if request.method == 'POST':
             data = json.loads(request.body)
             login_name = data.get('username')
             login_password = data.get('password')
-            if UserRegistration.objects.filter(username=login_name, password=login_password).exists():
+            user = auth.authenticate(username=login_name, password=login_password)
+            if user is not None:
+                auth.login(request, user)
                 data = {'message': 'Logged in Successfully'}
                 return JsonResponse(data)
             else:
                 data = {"message": "Invalid Credentials!!!"}
                 return JsonResponse(data)
-    except Exception as e:
-        raise e
+    except Exception:
+        raise ValueError
