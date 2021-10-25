@@ -1,48 +1,52 @@
 import json
 
-from django.contrib import auth
-
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-
-
-"""
-    This function registers a new user
-            :return: Response if registered or not
-"""
+from django.contrib.auth import authenticate
+from django.db import IntegrityError
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .serializers import UserSerializer
 
 
-def register_request(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.save()
-        response = {"message": "Registered successfully"}
-        return JsonResponse(response)
+class RegisterView(APIView):
+
+    def post(self, request):
+        """
+        This function registers the user
+        return: user registered or not
+        """
+        try:
+            serializer = UserSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                response = {"message": "Registered successfully"}
+                return Response(response)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except IntegrityError:
+            return Response({"message": "User name already exists"})
+        except Exception as e:
+            value = {'Exception', 'Value does not exists'}
+            return Response(value)
 
 
-"""
-    This function lets the user to log in 
-        :return: Login success or failed
-"""
-
-
-def login(request):
-    try:
-        if request.method == 'POST':
+class RegisterLogin(APIView):
+    def post(self, request):
+        """
+               This function lets the user login
+               return: user success or not
+               """
+        try :
             data = json.loads(request.body)
-            login_name = data.get('username')
-            login_password = data.get('password')
-            user = auth.authenticate(username=login_name, password=login_password)
+            user = authenticate(username=data.get('username'), password=data.get('password'))
             if user is not None:
-                auth.login(request, user)
                 data = {'message': 'Logged in Successfully'}
-                return JsonResponse(data)
+                return Response(data)
             else:
                 data = {"message": "Invalid Credentials!!!"}
-                return JsonResponse(data)
-    except Exception as e:
-        raise e
+                return Response(data)
+        except Exception as e:
+            value = {'Exception', 'Value does not exists'}
+            return Response(value)
+
+
